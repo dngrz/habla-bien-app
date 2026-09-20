@@ -1,0 +1,14 @@
+node_modules
+dist
+.expo
+.env
+.env.*
+app.json.bak
+.git
+.gitignore
+.dockerignore
+README.md
+AGENTS.md
+CLAUDE.md
+.claude
+.vscode

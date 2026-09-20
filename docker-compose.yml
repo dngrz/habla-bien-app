@@ -13,3 +13,23 @@ services:
       RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-10}
     ports:
       - "${BACKEND_PORT:-3000}:3000"
+    networks:
+      - hablabien-net
+
+  web:
+    build:
+      context: ./mobile
+      args:
+        # URL pública del backend; se inyecta en el bundle de la app web.
+        EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL}
+    image: habla-bien-web:latest
+    container_name: habla-bien-web
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    networks:
+      - hablabien-net
+
+networks:
+  hablabien-net:
+    driver: bridge

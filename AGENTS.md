@@ -8,6 +8,7 @@ estructura, claridad, muletillas y tono.
 
 - `backend/` — Next.js 16 (App Router, TypeScript). Proxy de OpenAI. Único lugar con `OPENAI_API_KEY`.
 - `mobile/` — Expo SDK 57 + React Native 0.86 (TypeScript, expo-router). Rutas en `src/app`, alias `@/*` → `src/*`.
+- `mobile/Dockerfile` + `mobile/nginx.conf` — contenedor **web** (export de Expo + nginx bajo `/habla-bien/`). No es para builds nativos.
 
 ## Comandos
 
@@ -25,7 +26,7 @@ Mobile (en `mobile/`):
 
 Raíz:
 - `podman-compose up --build` / `podman-compose down`
-- Solo el backend está containerizado; la app móvil corre en el host.
+- Backend y app **web** van en contenedor; la app móvil nativa corre en el host (Expo Go / EAS).
 
 ## Reglas y gotchas
 
@@ -41,6 +42,10 @@ Raíz:
 - **Rate limit en memoria por IP** en `/api/analyze` (`backend/lib/rate-limit.ts`, `RATE_LIMIT_MAX`, 1 h). No comparte estado entre réplicas.
 - **Env**: el `.env` de la raíz lo usa `podman-compose`. Expo lee `mobile/.env` (no el de la raíz) para `EXPO_PUBLIC_API_URL`.
 - **Nombre del archivo de compose**: `docker-compose.yml`, ejecutado con `podman-compose` (el subcomando `podman compose` de esta máquina delega en Docker Compose; no usarlo).
+- **El contenedor web usa `mobile/Dockerfile` con nombre por defecto**: `podman-compose 1.6` de esta máquina ignora el campo `dockerfile:` y solo detecta `Dockerfile`/`Containerfile`. No renombrar a `Dockerfile.web`.
+- **Subpath web en `experiments.baseUrl`** (`mobile/app.json`), no en `web.experiments`. `expo-router` solo lo aplica en builds de producción vía `process.env.EXPO_BASE_URL`; en `expo start` las rutas cuelgan de la raíz.
+- **`EXPO_PUBLIC_API_URL` se inyecta en build time** (build arg del contenedor web). No puede ser `localhost` en producción. `mobile/.dockerignore` excluye `mobile/.env` para no hornear valores locales.
+- **nginx del contenedor web**: `root /usr/share/nginx/html` + `try_files $uri $uri.html $uri/ /habla-bien/index.html`. No usar `alias` con `try_files` (bug conocido). El API va en otro dominio, por eso CORS debe incluir el origen de la web.
 
 ## Documentación obligatoria de los frameworks
 

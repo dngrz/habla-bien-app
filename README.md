@@ -13,13 +13,16 @@ paciente y sin juicio.
 | Componente | Tecnología | Carpeta |
 |---|---|---|
 | App móvil | Expo SDK 57 + React Native 0.86 (TypeScript, expo-router) | `mobile/` |
+| App web | Mismo código Expo, exportado a estáticos y servido por nginx | `mobile/` |
 | Backend | Next.js 16 (App Router, TypeScript), proxy de OpenAI | `backend/` |
-| Contenedores | Podman + `podman-compose` (solo backend) | `docker-compose.yml` |
+| Contenedores | Podman + `podman-compose` (backend + web) | `docker-compose.yml` |
 
 ```
 habla-bien-app/
 ├── backend/          # API Next.js, contenedor
-├── mobile/           # app Expo (corre en el host)
+├── mobile/           # app Expo (host) + build web (contenedor)
+│   ├── Dockerfile    # contenedor web: export de Expo + nginx
+│   └── nginx.conf    # sirve bajo /habla-bien/
 ├── docker-compose.yml
 ├── .env.example
 ├── AGENTS.md
@@ -65,7 +68,7 @@ cp mobile/.env.example mobile/.env
 `EXPO_PUBLIC_API_URL` por defecto es `http://localhost:3000` (suficiente para la
 vista web). En un dispositivo físico usa la IP LAN de tu PC.
 
-## Ejecutar el backend (contenedor)
+## Ejecutar backend + web (contenedores)
 
 ```bash
 podman-compose up --build
@@ -75,6 +78,7 @@ Servicios publicados:
 
 | Servicio | URL |
 |---|---|
+| App web | http://localhost:8080/habla-bien/ |
 | Backend | http://localhost:3000 |
 | Health | http://localhost:3000/api/health |
 
@@ -83,6 +87,11 @@ Para detener:
 ```bash
 podman-compose down
 ```
+
+> La app web se exporta **en tiempo de build** con `EXPO_PUBLIC_API_URL` y el
+> subpath `/habla-bien/` (`experiments.baseUrl` en `mobile/app.json`). Para
+> producción, define `EXPO_PUBLIC_API_URL` con la URL HTTPS pública del backend y
+> añade el origen de la web a `CORS_ALLOWED_ORIGINS`.
 
 ### Endpoints
 
@@ -106,6 +115,10 @@ Para grabar audio desde el navegador, abre `http://localhost:8081` (los
 navegadores solo permiten micrófono en contextos seguros; por IP en `http`
 fallará).
 
+> En desarrollo (`expo start`) las rutas cuelgan de la raíz (`/record`, …). El
+> subpath `/habla-bien/` (`experiments.baseUrl`) se aplica **solo en el export de
+> producción**, que es el que usa el contenedor web.
+
 ## Variables de entorno
 
 Raíz (`.env`, usadas por `podman-compose`):
@@ -116,8 +129,10 @@ Raíz (`.env`, usadas por `podman-compose`):
 | `OPENAI_TRANSCRIBE_MODEL` | `whisper-1` | Único modelo con timestamps por palabra |
 | `OPENAI_ANALYSIS_MODEL` | `gpt-4o` | Modelo que interpreta estructura/claridad/tono |
 | `BACKEND_PORT` | `3000` | Puerto publicado en el host |
-| `CORS_ALLOWED_ORIGINS` | `http://localhost:8081,...` | Orígenes permitidos |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:8081,...` | Orígenes permitidos (incluye el de la web publicada) |
 | `RATE_LIMIT_MAX` | `10` | Análisis por IP y por hora |
+| `WEB_PORT` | `8080` | Puerto del contenedor web publicado en el host |
+| `EXPO_PUBLIC_API_URL` | — | URL absoluta del backend; se inyecta en el build web |
 
 Móvil (`mobile/.env`):
 
@@ -138,7 +153,10 @@ npm run build
 cd mobile
 npx tsc --noEmit
 npx expo-doctor
-npx expo export --platform web
+npx expo export --platform web   # build web (debe referenciar /habla-bien/_expo/...)
+
+# Contenedor web
+podman-compose build web
 ```
 
 ## Limitaciones conocidas
@@ -158,3 +176,7 @@ npx expo export --platform web
   (`podman machine stop` y `podman machine start`) o revisa el firewall de Windows.
   Dentro del contenedor el servicio responde normalmente.
 - **El micrófono no funciona en web**: usa `http://localhost:8081`, no la IP LAN.
+- **404 del JS en la web publicada**: debe servirse bajo `/habla-bien/` con el
+  `baseUrl` configurado y el `try_files` de `mobile/nginx.conf`. Verifica que el
+  `dist` referencie `/habla-bien/_expo/...`. En producción el sitio debe ir por
+  **HTTPS** (el micrófono lo exige).
