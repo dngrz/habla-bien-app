@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Build output
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+
+# Expo
+.expo/
+web-build/
+mobile/dist/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Podman / Docker
+*.tar
