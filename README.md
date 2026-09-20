@@ -11,6 +11,7 @@ paciente y sin juicio.
 |---|---|
 | Demo | [https://habla-bien-frontend-production.up.railway.app/](https://habla-bien-frontend-production.up.railway.app/) |
 
+![Imagen del App](imagen/habla-bien-front.png)
 
 > Alcance actual: **modo oral**. Los modos escrito y debate simulado aparecen en la
 > app como "Próximamente".
