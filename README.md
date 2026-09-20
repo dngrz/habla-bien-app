@@ -5,6 +5,13 @@ estudiante elige un tema, graba una exposición oral de hasta 2 minutos y recibe
 retroalimentación sobre **estructura, claridad, muletillas y tono**, con un tono
 paciente y sin juicio.
 
+## Demo Publicada
+
+| App | URL |
+|---|---|
+| Demo | [https://habla-bien-frontend-production.up.railway.app/](https://habla-bien-frontend-production.up.railway.app/) |
+
+
 > Alcance actual: **modo oral**. Los modos escrito y debate simulado aparecen en la
 > app como "Próximamente".
 
